@@ -1,0 +1,13 @@
+
+
+server:
+  port: 8080
+
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://faizanhafiz928:7fdgoyOJqRmctUcy@cluster1.c1dtssk.mongodb.net/?retryWrites=true&w=majority
+      database: restaurantDB
+
+
