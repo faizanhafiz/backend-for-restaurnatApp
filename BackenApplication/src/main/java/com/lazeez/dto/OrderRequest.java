@@ -14,7 +14,7 @@ import java.util.List;
 @Builder
 public class OrderRequest {
 
-   private  String userId;
+
 
    // delivered , pending , failed
    private  String status;

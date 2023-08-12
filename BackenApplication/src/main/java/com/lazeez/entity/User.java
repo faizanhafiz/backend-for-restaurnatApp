@@ -39,6 +39,8 @@ public class User {
 
     private List<Cart> cart;
 
+    private String role ="USER";
+
 
 
 

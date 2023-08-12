@@ -105,11 +105,5 @@ public class ProductService {
 
     }
 
-    public ResponseEntity<?> dtoTest(String pId) {
 
-       List<ResponseDto> product = productRepository.findByProductName(pId);
-
-        return ResponseEntity.ok(product);
-
-    }
 }

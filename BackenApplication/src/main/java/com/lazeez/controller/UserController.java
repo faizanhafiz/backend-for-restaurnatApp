@@ -2,19 +2,28 @@ package com.lazeez.controller;
 
 
 
+import com.lazeez.dto.LoginRequest;
 import com.lazeez.entity.User;
+
 import com.lazeez.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
+
+
 
 @RequestMapping("/user")
 @RestController
 public class UserController {
 
 
+
+
     @Autowired
     private UserService userService;
+
+
 
 
 
@@ -27,27 +36,27 @@ public class UserController {
     }
 
 
-    @PutMapping("/updateUser/{userId}")
-    public ResponseEntity<?> updateUser(@PathVariable String userId, @RequestBody User user){
-        return userService.updateUser(userId, user);
+    @PutMapping("/updateUser/")
+    public ResponseEntity<?> updateUser(@RequestHeader("Authorization") String authorizationHeader, @RequestBody User user){
+        return userService.updateUser( authorizationHeader,user);
 
     }
 
 
-    @DeleteMapping("/deleteUser/{userId}")
-    public ResponseEntity<?> deleteUser(@PathVariable String userId){
+    @DeleteMapping("/deleteUser")
+    public ResponseEntity<?> deleteUser(@RequestHeader("Authorization") String authorizationHeader){
 
-        return userService.deleteUser(userId);
+        return userService.deleteUser(authorizationHeader);
 
     }
 
 
 
-    @GetMapping("/getUser/{userId}")
-    public ResponseEntity<?> getUser(@PathVariable String userId)
+    @GetMapping("/getUser")
+    public ResponseEntity<?> getUser(@RequestHeader("Authorization") String authorizationHeader)
     {
 
-        return userService.getUser(userId);
+        return userService.getUser(authorizationHeader);
 
     }
 
@@ -61,18 +70,30 @@ public class UserController {
     }
 
 
-    @PostMapping("/addToCart/{productid}/{userId}")
-    public ResponseEntity<?>  addToCart(@PathVariable  String productid,@PathVariable String userId)
+    @PostMapping("/addToCart/{productid}")
+    public ResponseEntity<?>  addToCart(@RequestHeader("Authorization") String authorizationHeader,@PathVariable  String productid)
     {
-        return userService.addToCart(productid ,userId);
+        return userService.addToCart(productid,authorizationHeader);
     }
 
 
-    @GetMapping("/getCart/{userId}")
-    public ResponseEntity<?>  getCart(@PathVariable String userId)
+    @GetMapping("/getCart")
+    public ResponseEntity<?>  getCart(@RequestHeader("Authorization") String authorizationHeader)
     {
 
-        return userService.getCart(userId);
+        return userService.getCart(authorizationHeader);
+
+
+    }
+
+
+    @PostMapping("/login")
+    public String login(@RequestBody LoginRequest loginRequest)
+    {
+
+        return userService.login(loginRequest);
+
+
 
 
     }

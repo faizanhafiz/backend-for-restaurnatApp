@@ -1,11 +1,15 @@
 package com.lazeez.service;
 
 
+import com.lazeez.CustomeException;
 import com.lazeez.dto.OrderRequest;
 import com.lazeez.entity.Order;
 import com.lazeez.entity.Product;
+import com.lazeez.entity.User;
 import com.lazeez.repository.OrderRepository;
 import com.lazeez.repository.ProductRepository;
+import com.lazeez.repository.UserRepository;
+import com.lazeez.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +26,21 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    JwtUtil jwtUtil;
+
+    @Autowired
     private ProductRepository productRepository;
     Logger logger = LoggerFactory.getLogger(OrderService.class);
-    public ResponseEntity<?> getOrderBYUserId(String userId) {
+    public ResponseEntity<?> getOrderBYUserId(String authorizationHeader) {
 
         try{
 
-            List<Order> order = orderRepository.findByUserId(userId);
+            User user = getUserByToken(authorizationHeader);
+
+            List<Order> order = orderRepository.findByUserId(user.getId());
             if(order!=null)
             {
                 return  ResponseEntity.ok(order);
@@ -59,13 +71,14 @@ public class OrderService {
 
     }
 
-    public ResponseEntity<?> placeOrder(OrderRequest orderRequest) {
+    public ResponseEntity<?> placeOrder(String authorizationHeader,OrderRequest orderRequest) {
 
         try{
+            String UserId =  getUserByToken(authorizationHeader).getId();
             List<Product> products = new ArrayList<>();
             Order  order = new Order();
             order.setStatus(orderRequest.getStatus());
-            order.setUserId(orderRequest.getUserId());
+            order.setUserId(UserId);
 
             List<String> productIds = orderRequest.getProductIds();
             for(String prodId : productIds){
@@ -123,5 +136,30 @@ public class OrderService {
 
 
         }
+    }
+
+
+    private User getUserByToken(String authorizationHeader)
+    {
+        // Extract the token from the authorization header
+        String token = authorizationHeader.replace("Bearer ", "");
+
+        if(token.isEmpty())
+        {
+            throw new CustomeException("token is empty");
+        }
+
+
+
+        String email = jwtUtil.extractUsername(token);
+        User  user = userRepository.findByEmail(email);
+        if(user!=null)
+        {
+            return  user;
+        }
+
+        return null;
+
+
     }
 }

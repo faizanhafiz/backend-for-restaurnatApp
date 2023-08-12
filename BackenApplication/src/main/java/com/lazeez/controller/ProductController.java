@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RequestMapping(path = "/product")
 @RestController
-@CrossOrigin(origins = "*")
+
 public class ProductController {
 
 
@@ -55,11 +55,7 @@ public class ProductController {
 
 
 
-    @GetMapping("/dto/{pId}")
-    public ResponseEntity<?>  dtoTest(@PathVariable String pId)
-    {
-        return productService.dtoTest(pId);
-    }
+
 
 
 

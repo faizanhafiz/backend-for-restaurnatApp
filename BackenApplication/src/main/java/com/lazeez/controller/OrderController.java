@@ -15,19 +15,19 @@ public class OrderController {
     private OrderService orderService;
 
 
-    @GetMapping("/getOrderByUserId/{userId}")
-    public ResponseEntity<?>  getOrderBYUserId(@PathVariable String userId)
+    @GetMapping("/getOrderByUserId")
+    public ResponseEntity<?>  getOrderBYUserId(@RequestHeader("Authorization") String authorizationHeader)
     {
-        return  orderService.getOrderBYUserId(userId);
+        return  orderService.getOrderBYUserId(authorizationHeader);
 
     }
 
 
 
     @PostMapping("/placeOrder")
-    public  ResponseEntity<?>   placeOrder(@RequestBody OrderRequest orderRequest)
+    public  ResponseEntity<?>   placeOrder(@RequestHeader("Authorization") String authorizationHeader,@RequestBody OrderRequest orderRequest)
     {
-        return orderService.placeOrder(orderRequest);
+        return orderService.placeOrder(authorizationHeader,orderRequest);
 
     }
 

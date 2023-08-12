@@ -2,16 +2,24 @@ package com.lazeez.service;
 
 
 
+import com.lazeez.CustomeException;
 import com.lazeez.dto.Cart;
+import com.lazeez.dto.LoginRequest;
 import com.lazeez.entity.Product;
 import com.lazeez.entity.User;
 import com.lazeez.repository.ProductRepository;
 import com.lazeez.repository.UserRepository;
+import com.lazeez.security.JwtUtil;
+import com.lazeez.security.UserDetailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,6 +28,13 @@ import java.util.List;
 
 @Service
 public class UserService {
+    @Autowired
+    JwtUtil jwtUtil;
+    @Autowired
+    AuthenticationManager authenticationManager;
+
+    @Autowired
+    UserDetailService userDetailService;
 
     @Autowired
     private UserRepository userRepository;
@@ -29,11 +44,12 @@ public class UserService {
 
 
     Logger logger = LoggerFactory.getLogger(UserService.class);
-    public   ResponseEntity<?> updateUser(String userId , User user) {
+    public   ResponseEntity<?> updateUser(String authorizationHeader , User user) {
         try{
 
+            User  user1  = getUserByToken(authorizationHeader);
 
-            user.setId(userId);
+            user.setId(user1.getId());
 
             userRepository.save(user);
 
@@ -53,49 +69,62 @@ public class UserService {
         }
     }
 
-    public  ResponseEntity<?> deleteUser(String userId) {
+    public ResponseEntity<?> deleteUser(String authorizationHeader) {
+        try {
+            // Extract the token from the authorization header
+            String token = authorizationHeader.replace("Bearer ", "");
 
-        try
-        {
+            System.out.println("token"+"    "+token);
 
-            User user  = userRepository.findById(userId).get();
-
-            if(user!=null)
+            String email = jwtUtil.extractUsername(token);
+            UserDetails userDetails;
+            if(!email.isEmpty())
             {
-
-                userRepository.deleteById(userId);
-                return  ResponseEntity.ok("User deleted");
-
+                 userDetails =userDetailService.loadUserByUsername(email);
             }else{
-
-                return new ResponseEntity<>("User not Found",HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("User not there",HttpStatus.BAD_REQUEST);
 
             }
 
+            System.out.println("inside delete========="+email);
 
 
+            // Validate the token
+            if (jwtUtil.validateToken(token,userDetails))
+            {
+                // Extract user information from the token
+                String username = jwtUtil.extractUsername(token);
 
-        }catch (IllegalArgumentException ex){
+                // Find the user by email (assuming email is the identifier)
+                User user = userRepository.findByEmail(username);
 
-            logger.info("error occured inside updateUser",ex);
-
-            return new ResponseEntity<>("user Id must not be null", HttpStatus.BAD_REQUEST);
-        }
-
-        catch (Exception ex)
-        {
-            logger.info("error occured inside deleteUser",ex);
+                if (user != null) {
+                    userRepository.deleteById(user.getId()); // Assuming user.getId() is the user's identifier
+                    return ResponseEntity.ok("User deleted");
+                } else {
+                    return new ResponseEntity<>("User not Found", HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                return new ResponseEntity<>("Invalid or expired token", HttpStatus.UNAUTHORIZED);
+            }
+        } catch (IllegalArgumentException ex) {
+            logger.info("error occurred inside deleteUser", ex);
+            return new ResponseEntity<>("Authorization header must not be null", HttpStatus.BAD_REQUEST);
+        } catch (Exception ex) {
+            logger.info("error occurred inside deleteUser", ex);
             return new ResponseEntity<>("Something went wrong", HttpStatus.INTERNAL_SERVER_ERROR);
-
         }
     }
 
-    public   ResponseEntity<?> getUser(String userId) {
+
+
+    public   ResponseEntity<?> getUser(String authorizationHeader) {
 
         try
         {
+            User user = getUserByToken(authorizationHeader);
 
-            User user  = userRepository.findById(userId).get();
+
             if(user!=null)
             {
                 return ResponseEntity.ok(user);
@@ -171,11 +200,11 @@ public class UserService {
         }
     }
 
-    public ResponseEntity<?> addToCart(String productId ,String userId) {
+    public ResponseEntity<?> addToCart(String productId ,String authorizationHeader) {
         try
         {
 
-            User user = userRepository.findById(userId).get();
+            User user = getUserByToken(authorizationHeader);
             Product product = productRepository.findById(productId).get();
             if(product==null)
             {
@@ -250,11 +279,11 @@ public class UserService {
 
     }
 
-    public ResponseEntity<?> getCart(String userId) {
+    public ResponseEntity<?> getCart(String authorizationHeader) {
         try{
 
 
-           User user = userRepository.findById(userId).get();
+           User user = getUserByToken(authorizationHeader);
            List<Cart> cart = user.getCart();
 
             return ResponseEntity.ok(cart);
@@ -266,5 +295,48 @@ public class UserService {
             logger.info("Exception occured in getcart method",ex);
             return new ResponseEntity<>("Something went wrong" ,HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public String login(LoginRequest loginRequest) {
+
+        try{
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword()));
+
+        }catch (Exception ex)
+        {
+            throw new UsernameNotFoundException("User not found "+loginRequest.getEmail());
+        }
+
+        UserDetails userDetails= this.userDetailService.loadUserByUsername(loginRequest.getEmail());
+
+        String token = jwtUtil.generateToken(userDetails);
+
+        return token;
+    }
+
+
+
+    private User getUserByToken(String authorizationHeader)
+    {
+        // Extract the token from the authorization header
+        String token = authorizationHeader.replace("Bearer ", "");
+
+        if(token.isEmpty())
+        {
+            throw new CustomeException("token is empty");
+        }
+
+
+
+        String email = jwtUtil.extractUsername(token);
+        User  user = userRepository.findByEmail(email);
+        if(user!=null)
+        {
+            return  user;
+        }
+
+        return null;
+
+
     }
 }
