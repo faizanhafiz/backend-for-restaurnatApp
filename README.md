@@ -28,8 +28,8 @@ This Restaurant Application is built using Java, Spring Boot, and Spring Securit
   - Java
   - Spring Boot
   - Spring Security
-- **Backend
-    - MySQL
+- **Database:**
+  - MySQL
 - **Authentication:**
   - JWT Tokens
 
